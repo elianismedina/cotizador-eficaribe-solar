@@ -63,6 +63,14 @@ class ParametrosFinancieros(models.Model):
         "Tarifa de referencia comercial (COP/kWh)", max_digits=8, decimal_places=2, default=Decimal("1150"),
         help_text="Se usa si el cliente no indica el valor de su factura",
     )
+    margen_residencial = models.DecimalField(
+        "Margen por defecto residencial", max_digits=4, decimal_places=3, default=Decimal("0.25"), validators=PORCENTAJE,
+        help_text="Sobre el costo del proveedor: precio = costo × (1 + margen)",
+    )
+    margen_comercial = models.DecimalField(
+        "Margen por defecto comercial", max_digits=4, decimal_places=3, default=Decimal("0.15"), validators=PORCENTAJE,
+        help_text="Sobre el costo del proveedor: precio = costo × (1 + margen)",
+    )
     factor_emision_kg_kwh = models.DecimalField(
         "Factor de emisión (kg CO₂/kWh)", max_digits=5, decimal_places=3, default=Decimal("0.126"),
         help_text="Validar con el factor de emisión vigente del SIN",
@@ -135,7 +143,12 @@ class PlantillaCondiciones(models.Model):
 
     nombre = models.CharField(max_length=100)
     por_defecto = models.BooleanField(default=False)
-    validez_dias = models.PositiveSmallIntegerField(default=15)
+    validez_dias = models.PositiveSmallIntegerField(default=8)
+    nota_precios = models.TextField(
+        blank=True,
+        default="Precios sujetos a disponibilidad de inventario del proveedor y a variaciones de la TRM.",
+        help_text="Aparece junto a la validez de la oferta",
+    )
     forma_pago = models.TextField(default="75 % de anticipo con la orden de compra y 25 % contra entrega.")
     tiempo_entrega = models.TextField(default="15 días hábiles a partir del anticipo, sujeto a disponibilidad de inventario.")
     opciones_financiacion = models.TextField(

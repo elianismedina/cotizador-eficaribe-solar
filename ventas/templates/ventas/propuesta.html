@@ -63,7 +63,7 @@
     <tr class="grupo"><td colspan="8">{{ g.nombre|upper }}</td></tr>
     {% for i in g.items %}
     <tr><td class="centro">{{ i.orden|add:1 }}</td><td>{{ i.descripcion }}</td><td class="centro">{{ i.cantidad|floatformat:"-2" }}</td>
-        <td class="centro">{{ i.producto.unidad }}{% if i.producto.unidad_detalle %} ({{ i.producto.unidad_detalle }}){% endif %}</td>
+        <td class="centro">{{ i.unidad }}{% if i.unidad_detalle %} ({{ i.unidad_detalle }}){% endif %}</td>
         <td class="num">{{ i.precio_unitario|cop }}</td><td class="num">{{ i.subtotal|cop }}</td>
         <td class="num">{% if i.tasa_iva %}{{ i.iva|cop }}{% else %}Excluido{% endif %}</td><td class="num">{{ i.total|cop }}</td></tr>
     {% endfor %}
@@ -84,7 +84,7 @@
   <li><b>Tiempo de entrega:</b> {{ condiciones.tiempo_entrega }}</li>
   {% if cot.lugar_entrega %}<li><b>Lugar de entrega:</b> {{ cot.lugar_entrega }}</li>{% endif %}
   <li><b>Garantías:</b> {{ condiciones.garantias }}</li>
-  <li><b>Validez:</b> {{ cot.validez_dias }} días calendario (hasta el {{ vence }}).</li>
+  <li><b>Validez:</b> {{ cot.validez_dias }} días calendario (hasta el {{ vence }}).{% if condiciones.nota_precios %} {{ condiciones.nota_precios }}{% endif %}</li>
 </ul>
 
 {% if escenarios %}

@@ -42,7 +42,7 @@ def construir_contexto(cot: Cotizacion) -> dict:
     empresa = Empresa.actual()
     p = ParametrosFinancieros.vigentes()
     plantilla = PlantillaCondiciones.objects.filter(por_defecto=True).first()
-    items = list(cot.items.select_related("producto"))
+    items = list(cot.items.select_related("producto", "cotizacion"))
 
     grupos = [
         {"nombre": dict(ItemCotizacion.Grupo.choices).get(clave, clave), "items": list(lista)}
@@ -59,7 +59,7 @@ def construir_contexto(cot: Cotizacion) -> dict:
     energia = generacion_anual(kwp, float(cot.hsp), rendimiento) if kwp else 0.0
 
     def total_categoria(cat):
-        return float(sum(i.total for i in items if i.producto.categoria == cat))
+        return float(sum(i.total for i in items if i.categoria == cat))
 
     reposiciones = {}
     if total_categoria(Producto.Categoria.INVERSOR):
@@ -108,9 +108,9 @@ def construir_contexto(cot: Cotizacion) -> dict:
             "valores": [analizar(inv, energia, supuestos(auto=auto_bajo)).recuperacion_texto for _, _, inv in inversiones],
         })
 
-    paneles = [i for i in items if i.producto.categoria == Producto.Categoria.PANEL]
-    inversores = [i for i in items if i.producto.categoria == Producto.Categoria.INVERSOR]
-    baterias = [i for i in items if i.producto.categoria == Producto.Categoria.BATERIA]
+    paneles = [i for i in items if i.categoria == Producto.Categoria.PANEL]
+    inversores = [i for i in items if i.categoria == Producto.Categoria.INVERSOR]
+    baterias = [i for i in items if i.categoria == Producto.Categoria.BATERIA]
     hay_excluidos = any(i.tasa_iva == 0 for i in items)
 
     return {
@@ -155,6 +155,7 @@ def construir_contexto(cot: Cotizacion) -> dict:
         "co2_ton_anio": energia * float(p.factor_emision_kg_kwh) / 1000,
         "condiciones": {
             "forma_pago": cot.forma_pago or (plantilla.forma_pago if plantilla else PlantillaCondiciones._meta.get_field("forma_pago").default),
+            "nota_precios": plantilla.nota_precios if plantilla else PlantillaCondiciones._meta.get_field("nota_precios").default,
             "tiempo_entrega": cot.tiempo_entrega or (plantilla.tiempo_entrega if plantilla else PlantillaCondiciones._meta.get_field("tiempo_entrega").default),
             "financiacion": plantilla.opciones_financiacion if plantilla else PlantillaCondiciones._meta.get_field("opciones_financiacion").default,
             "garantias": cot.garantias or garantias_desde_productos(items),
@@ -164,8 +165,7 @@ def construir_contexto(cot: Cotizacion) -> dict:
 
 
 def garantias_desde_productos(items) -> str:
-    partes = [f"{i.producto.nombre}: {i.producto.garantia_anios} años"
-              for i in items if i.producto.garantia_anios]
+    partes = [f"{i.descripcion}: {i.garantia_anios} años" for i in items if i.garantia_anios]
     resto = "demás equipos según las condiciones de cada fabricante"
     return "; ".join(partes + [resto]) + "." if partes else resto[0].upper() + resto[1:] + "."
 
