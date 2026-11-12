@@ -114,3 +114,16 @@ class FlujoPublicoTests(TestCase):
             "acepta": "on", "sitio_web": "http://spam",
         })
         self.assertFalse(Cotizacion.objects.exists())
+
+
+class ColoresMarcaTests(TestCase):
+    def test_colores_de_empresa_en_la_pagina(self):
+        from configuracion.models import Empresa
+
+        empresa = Empresa.actual()
+        empresa.color_primario = "#0A7F3F"
+        empresa.color_secundario = "#FFC20E"
+        empresa.save()
+        html = self.client.get("/").content.decode()
+        self.assertIn("--marca:10 127 63", html)
+        self.assertIn("--marca-sol:255 194 14", html)

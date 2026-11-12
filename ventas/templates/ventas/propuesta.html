@@ -4,22 +4,23 @@
   @page { size: letter; margin: 1.6cm 1.6cm 1.8cm 1.6cm;
           @frame pie { -pdf-frame-content: pie; bottom: 0.7cm; margin-left: 1.6cm; margin-right: 1.6cm; height: 0.8cm; } }
   body { font-family: Helvetica; font-size: 9pt; color: #222; }
-  .empresa { font-size: 14pt; font-weight: bold; color: #1F4E79; }
+  .empresa { font-size: 14pt; font-weight: bold; color: {{ empresa.color_primario|default:'#225816' }}; }
   .datos-empresa { font-size: 8pt; color: #555; }
-  .linea { border-bottom: 2px solid #1F4E79; margin: 6px 0 10px 0; }
-  h1 { text-align: center; color: #1F4E79; font-size: 17pt; margin: 4px 0 0 0; }
+  .linea { border-bottom: 3px solid {{ empresa.color_secundario|default:'#FFC302' }}; margin: 6px 0 10px 0; }
+  h1 { text-align: center; color: {{ empresa.color_primario|default:'#225816' }}; font-size: 17pt; margin: 4px 0 0 0; }
   .subtitulo { text-align: center; font-size: 10pt; margin-bottom: 8px; }
-  h2 { color: #1F4E79; font-size: 12pt; margin: 12px 0 4px 0; }
+  h2 { color: {{ empresa.color_primario|default:'#225816' }}; font-size: 12pt; margin: 12px 0 4px 0; }
   h3 { color: #2E75B6; font-size: 10pt; margin: 8px 0 3px 0; }
   table { width: 100%; border-collapse: collapse; }
   td, th { border: 0.5px solid #bbb; padding: 3px 4px; vertical-align: top; }
-  th { background-color: #1F4E79; color: white; font-weight: bold; text-align: center; }
+  th { background-color: {{ empresa.color_primario|default:'#225816' }}; color: white; font-weight: bold; text-align: center; }
   .etiqueta { background-color: #f2f2f2; font-weight: bold; width: 30%; }
-  .grupo td { background-color: #DCE6F1; font-weight: bold; }
+  .grupo td { background-color: #E3EDE0; font-weight: bold; }
   .num { text-align: right; }
   .centro { text-align: center; }
-  .total td { background-color: #DCE6F1; font-weight: bold; }
-  .gran-total td { background-color: #F4B183; font-weight: bold; }
+  table.encabezado td { border: none; padding: 0; vertical-align: middle; }
+  .total td { background-color: #E3EDE0; font-weight: bold; }
+  .gran-total td { background-color: {{ empresa.color_secundario|default:'#FFC302' }}; font-weight: bold; }
   .nota { font-size: 8pt; font-style: italic; color: #444; }
   .destacado { background-color: #E2EFDA; font-weight: bold; }
   .pie { text-align: center; font-size: 8pt; color: #777; }
@@ -27,9 +28,12 @@
 <body>
 <div id="pie" class="pie">Cotización {{ cot.numero }} · Página <pdf:pagenumber> de <pdf:pagecount></div>
 
-<div class="empresa">{{ empresa.razon_social|upper }}</div>
+<table class="encabezado"><tr>
+  {% if logo %}<td width="16%"><img src="{{ logo }}" width="72" height="74"></td>{% endif %}
+  <td><div class="empresa">{{ empresa.razon_social|upper }}</div>
 <div class="datos-empresa">{% if empresa.nit %}NIT {{ empresa.nit }}{% endif %}{% if empresa.direccion %} · {{ empresa.direccion }}{% endif %}<br>
-{% if empresa.telefono %}Tel. {{ empresa.telefono }}{% endif %}{% if empresa.correo %} · {{ empresa.correo }}{% endif %}</div>
+{% if empresa.telefono %}Tel. {{ empresa.telefono }}{% endif %}{% if empresa.correo %} · {{ empresa.correo }}{% endif %}</div></td>
+</tr></table>
 <div class="linea"></div>
 
 <h1>COTIZACIÓN FORMAL</h1>

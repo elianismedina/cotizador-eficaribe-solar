@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from itertools import groupby
 
+from django.contrib.staticfiles import finders
 from django.template.loader import render_to_string
 
 from catalogo.models import Producto
@@ -115,6 +116,7 @@ def construir_contexto(cot: Cotizacion) -> dict:
 
     return {
         "empresa": empresa,
+        "logo": finders.find("cotizador/logo.png"),
         "cot": cot,
         "cliente": cot.prospecto.cliente,
         "fecha": fecha_larga(cot.fecha),

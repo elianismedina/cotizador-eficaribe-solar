@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load static marca %}<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -6,12 +6,18 @@
   <title>{% block titulo %}Cotiza tu sistema solar{% endblock %} · {{ empresa.razon_social }}</title>
   <meta name="description" content="Calcula en minutos cuánto puedes ahorrar con energía solar en tu hogar o negocio.">
   <link rel="stylesheet" href="{% static 'cotizador/app.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'cotizador/favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'cotizador/apple-touch-icon.png' %}">
+  {% variables_marca empresa %}
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased">
-  <header class="bg-marca text-white">
-    <div class="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-      <a href="{% url 'cotizador:inicio' %}" class="font-semibold">{{ empresa.razon_social }}</a>
-      {% if empresa.sitio_web %}<a href="{{ empresa.sitio_web }}" class="text-sm text-white/80 hover:text-white">Volver a la tienda</a>{% endif %}
+<body class="bg-slate-50 text-slate-800 antialiased accent-marca">
+  <header class="border-b-4 border-marca-sol bg-white">
+    <div class="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+      <a href="{% url 'cotizador:inicio' %}" class="flex items-center gap-3">
+        <img src="{% static 'cotizador/logo.png' %}" alt="{{ empresa.razon_social }}" class="h-14 w-auto" width="56" height="58">
+        <span class="hidden text-sm font-semibold text-marca sm:inline">Cotizador solar</span>
+      </a>
+      {% if empresa.sitio_web %}<a href="{{ empresa.sitio_web }}" class="text-sm font-medium text-marca hover:underline">Volver a la tienda</a>{% endif %}
     </div>
   </header>
   <main class="mx-auto max-w-3xl px-4 py-8">
