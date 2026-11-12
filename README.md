@@ -47,6 +47,13 @@ Si cambias clases en las plantillas, vuelve a compilar:
 npx tailwindcss@3.4.17 -c tailwind/tailwind.config.js -i tailwind/entrada.css -o cotizador/static/cotizador/app.css --minify
 ```
 
+## Propuesta en PDF
+
+Desde el panel, en cada cotización, los enlaces **Ver PDF** y **Descargar** generan la propuesta formal con la estructura
+de COT-2026-1987: datos de la empresa, objeto, descripción del sistema, tabla económica por grupos con IVA por línea,
+condiciones comerciales y análisis de retorno (supuestos, escenarios, flujo de caja, sensibilidad y beneficios tributarios).
+Cuando el alcance es *solo suministro*, se agrega un segundo escenario con la instalación estimada.
+
 ## Pruebas
 
 ```bash
