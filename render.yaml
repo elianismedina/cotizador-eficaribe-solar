@@ -1,0 +1,34 @@
+# Blueprint de Render: servicio web Django + Postgres.
+# En Render: New > Blueprint y elegir este repositorio.
+databases:
+  - name: cotizador-db
+    databaseName: cotizador
+    user: cotizador
+    plan: basic-256mb
+    region: virginia
+
+services:
+  - type: web
+    name: cotizador-eficaribe-solar
+    runtime: python
+    plan: starter
+    region: virginia
+    buildCommand: ./build.sh
+    preDeployCommand: python manage.py migrate --no-input
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2
+    healthCheckPath: /health/
+    domains:
+      - cotizador.eficaribesolar.com
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cotizador-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: cotizador.eficaribesolar.com
