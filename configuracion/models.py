@@ -51,6 +51,18 @@ class ParametrosFinancieros(models.Model):
         help_text="Para el escenario 'equipos + instalación (est.)', sobre el total de equipos",
     )
     tarifa_renta = models.DecimalField(max_digits=4, decimal_places=3, default=Decimal("0.35"), validators=PORCENTAJE)
+    potencia_panel_referencia_w = models.PositiveIntegerField(
+        "Potencia del panel de referencia (W)", default=630,
+        help_text="Panel usado por el cotizador público para estimar el número de paneles",
+    )
+    tarifa_referencia_residencial = models.DecimalField(
+        "Tarifa de referencia residencial (COP/kWh)", max_digits=8, decimal_places=2, default=Decimal("900"),
+        help_text="Se usa si el cliente no indica el valor de su factura",
+    )
+    tarifa_referencia_comercial = models.DecimalField(
+        "Tarifa de referencia comercial (COP/kWh)", max_digits=8, decimal_places=2, default=Decimal("1150"),
+        help_text="Se usa si el cliente no indica el valor de su factura",
+    )
     factor_emision_kg_kwh = models.DecimalField(
         "Factor de emisión (kg CO₂/kWh)", max_digits=5, decimal_places=3, default=Decimal("0.126"),
         help_text="Validar con el factor de emisión vigente del SIN",
@@ -145,3 +157,42 @@ class PlantillaCondiciones(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class PrecioReferencia(models.Model):
+    """Precio por Wp instalado que usa el cotizador público para el estimado en línea."""
+
+    class TipoSistema(models.TextChoices):
+        ON_GRID = "on_grid", "Conectado a red"
+        HIBRIDO = "hibrido", "Híbrido con almacenamiento"
+
+    tipo_sistema = models.CharField(max_length=20, choices=TipoSistema.choices)
+    kwp_desde = models.DecimalField("Desde (kWp)", max_digits=7, decimal_places=2, default=Decimal("0"))
+    kwp_hasta = models.DecimalField("Hasta (kWp)", max_digits=7, decimal_places=2, null=True, blank=True,
+                                    help_text="Vacío = sin límite")
+    precio_min_wp = models.DecimalField("Precio mínimo por Wp (COP, antes de IVA)", max_digits=9, decimal_places=2)
+    precio_max_wp = models.DecimalField("Precio máximo por Wp (COP, antes de IVA)", max_digits=9, decimal_places=2)
+    incluye = models.CharField(max_length=200, blank=True, default="Llave en mano: equipos, instalación, RETIE y trámites")
+    nota = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "precio de referencia"
+        verbose_name_plural = "precios de referencia"
+        ordering = ["tipo_sistema", "kwp_desde"]
+
+    def __str__(self):
+        hasta = f"{self.kwp_hasta}" if self.kwp_hasta is not None else "∞"
+        return f"{self.get_tipo_sistema_display()} {self.kwp_desde}–{hasta} kWp · ${self.precio_min_wp}–${self.precio_max_wp}/Wp"
+
+    @property
+    def precio_por_wp(self) -> Decimal:
+        """Punto medio del rango, usado para el análisis de retorno."""
+        return (self.precio_min_wp + self.precio_max_wp) / 2
+
+    @classmethod
+    def para(cls, tipo_sistema: str, kwp) -> "PrecioReferencia | None":
+        candidatos = cls.objects.filter(tipo_sistema=tipo_sistema, kwp_desde__lte=kwp).order_by("-kwp_desde")
+        for ref in candidatos:
+            if ref.kwp_hasta is None or kwp <= ref.kwp_hasta:
+                return ref
+        return None

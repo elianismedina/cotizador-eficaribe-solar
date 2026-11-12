@@ -1,0 +1,56 @@
+{% extends "cotizador/base.html" %}
+{% load cop %}
+{% block titulo %}Tu sistema solar{% endblock %}
+{% block contenido %}
+<h1 class="text-2xl font-bold text-marca sm:text-3xl">Tu sistema solar estimado</h1>
+<p class="mt-2 text-slate-600">{{ e.zona }}, {{ e.departamento }} · {{ e.solicitud.consumo_kwh|miles }} kWh al mes · {% if e.solicitud.tipo_sistema == "hibrido" %}con baterías{% else %}conectado a la red{% endif %}</p>
+
+<div class="mt-6 grid gap-3 sm:grid-cols-3">
+  <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <p class="text-xs uppercase tracking-wide text-slate-500">Sistema</p>
+    <p class="mt-1 text-2xl font-bold">{{ e.potencia_kwp }} kWp</p>
+    <p class="text-sm text-slate-600">{{ e.num_paneles }} paneles de {{ e.potencia_panel_w }} W · ~{{ e.area_m2 }} m²</p>
+  </div>
+  <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <p class="text-xs uppercase tracking-wide text-slate-500">Ahorro estimado</p>
+    <p class="mt-1 text-2xl font-bold text-emerald-700">{{ e.ahorro_mensual|cop }}<span class="text-base font-normal text-slate-500">/mes</span></p>
+    <p class="text-sm text-slate-600">Genera ~{{ e.generacion_mensual_kwh|miles }} kWh al mes</p>
+  </div>
+  <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <p class="text-xs uppercase tracking-wide text-slate-500">Precio estimado</p>
+    {% if e.precio_min %}
+      <p class="mt-1 text-lg font-bold leading-tight">{{ e.precio_min|cop }} a {{ e.precio_max|cop }}</p>
+      <p class="text-xs text-slate-500">Antes de IVA</p>
+      <p class="text-sm text-slate-600">Recuperas la inversión en ~{{ e.recuperacion }}</p>
+    {% else %}
+      <p class="mt-1 text-base font-semibold">Te lo enviamos con tu asesor</p>
+    {% endif %}
+  </div>
+</div>
+
+<p class="mt-4 text-xs text-slate-500">
+  Estimado con {{ e.hsp }} horas sol pico, {{ e.rendimiento|porcentaje }} de rendimiento y una tarifa de {{ e.tarifa_kwh|cop }}/kWh
+  ({% if e.tarifa_origen == "factura" %}calculada con tu factura{% else %}valor de referencia{% endif %}).
+  Evita ~{{ e.co2_ton_anio }} toneladas de CO₂ al año. El precio es antes de IVA (paneles e inversores están excluidos) y se confirma después de una visita técnica.
+  Incluye equipos, instalación, certificación RETIE y trámites con el operador de red.
+</p>
+
+<section class="mt-8 rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+  <h2 class="text-lg font-semibold">Recibe tu cotización y agenda la visita técnica</h2>
+  <p class="mt-1 text-sm text-slate-600">Un asesor te contacta para confirmar los datos y enviarte la propuesta formal.</p>
+  <form method="post" class="mt-4 space-y-4" novalidate>
+    {% csrf_token %}
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% include "cotizador/_campo.html" with campo=form.nombre %}
+      {% include "cotizador/_campo.html" with campo=form.telefono %}
+      {% include "cotizador/_campo.html" with campo=form.correo %}
+      {% include "cotizador/_campo.html" with campo=form.ciudad %}
+    </div>
+    <div style="position:absolute;left:-9999px" aria-hidden="true">{{ form.sitio_web }}</div>
+    <label class="flex items-start gap-2 text-sm">{{ form.acepta }} <span>{{ form.acepta.label }}</span></label>
+    {% for e in form.acepta.errors %}<p class="text-sm text-red-600">{{ e }}</p>{% endfor %}
+    <button type="submit" class="w-full rounded-lg bg-marca px-4 py-3 font-semibold text-white hover:opacity-90">Quiero mi cotización</button>
+  </form>
+</section>
+<p class="mt-4 text-center text-sm"><a class="text-marca underline" href="{% url 'cotizador:inicio' %}">Cambiar mis datos</a></p>
+{% endblock %}

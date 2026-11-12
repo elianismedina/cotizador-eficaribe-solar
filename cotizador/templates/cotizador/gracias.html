@@ -1,0 +1,10 @@
+{% extends "cotizador/base.html" %}
+{% block titulo %}¡Gracias!{% endblock %}
+{% block contenido %}
+<div class="rounded-xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-200">
+  <h1 class="text-2xl font-bold text-marca">¡Gracias! Recibimos tu solicitud</h1>
+  {% if numero %}<p class="mt-2 text-slate-600">Tu número de cotización es <strong>{{ numero }}</strong>.</p>{% endif %}
+  <p class="mt-2 text-slate-600">Un asesor te contactará pronto para agendar la visita técnica y enviarte la propuesta formal.</p>
+  {% if empresa.sitio_web %}<a href="{{ empresa.sitio_web }}" class="mt-6 inline-block rounded-lg bg-marca px-4 py-2 font-semibold text-white">Volver a la tienda</a>{% endif %}
+</div>
+{% endblock %}

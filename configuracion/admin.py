@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Empresa, Irradiacion, ParametrosFinancieros, PlantillaCondiciones, Tarifa
+from .models import Empresa, Irradiacion, ParametrosFinancieros, PlantillaCondiciones, PrecioReferencia, Tarifa
 
 
 @admin.register(Empresa)
@@ -33,3 +33,10 @@ class TarifaAdmin(admin.ModelAdmin):
 @admin.register(PlantillaCondiciones)
 class PlantillaCondicionesAdmin(admin.ModelAdmin):
     list_display = ("nombre", "por_defecto", "validez_dias")
+
+
+@admin.register(PrecioReferencia)
+class PrecioReferenciaAdmin(admin.ModelAdmin):
+    list_display = ("tipo_sistema", "kwp_desde", "kwp_hasta", "precio_min_wp", "precio_max_wp", "incluye")
+    list_filter = ("tipo_sistema",)
+    list_editable = ("precio_min_wp", "precio_max_wp")

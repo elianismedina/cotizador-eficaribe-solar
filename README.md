@@ -29,6 +29,24 @@ python manage.py runserver
 
 Panel interno: http://localhost:8000/admin/
 
+## Cotizador público
+
+En la raíz del sitio (`/`) el cliente indica tipo de proyecto, zona, consumo y, si quiere, el valor de su factura.
+Ve el sistema sugerido, el ahorro y un rango de precio. Al dejar sus datos se crean el cliente, el prospecto y una
+cotización en borrador, y se envía un correo a `EMAIL_NOTIFICACIONES`.
+
+Los valores que usa se ajustan en el panel: **Precios de referencia** (COP por Wp instalado), **Irradiación por zona**
+(HSP) y **Parámetros financieros** (tarifas de referencia, panel de referencia, margen del rango).
+
+### Estilos
+
+Los estilos usan Tailwind compilado en `cotizador/static/cotizador/app.css` (no hace falta Node en Render).
+Si cambias clases en las plantillas, vuelve a compilar:
+
+```bash
+npx tailwindcss@3.4.17 -c tailwind/tailwind.config.js -i tailwind/entrada.css -o cotizador/static/cotizador/app.css --minify
+```
+
 ## Pruebas
 
 ```bash

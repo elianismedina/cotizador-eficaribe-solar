@@ -109,10 +109,25 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        if DEBUG
+        else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Correo: por defecto se imprime en consola. En producción, configurar SMTP del proveedor.
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Cotizador Eficiencia Solar <no-responder@eficaribesolar.com>")
+# Correos del equipo que reciben cada prospecto nuevo, separados por coma.
+EMAIL_NOTIFICACIONES = env_list("EMAIL_NOTIFICACIONES")
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
