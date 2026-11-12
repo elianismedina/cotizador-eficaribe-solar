@@ -2,7 +2,7 @@ from django import forms
 
 from configuracion.models import Irradiacion
 
-CAMPO = "w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-sky-700 focus:ring-sky-700"
+CAMPO = "w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-marca focus:ring-marca"
 
 
 class CotizadorForm(forms.Form):

@@ -1,8 +1,9 @@
 from decimal import Decimal
 
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
+COLOR_HEX = RegexValidator(r"^#[0-9A-Fa-f]{6}$", "Usa un color hex de 6 dígitos, por ejemplo #225816.")
 PORCENTAJE = [MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("1"))]
 
 
@@ -16,7 +17,14 @@ class Empresa(models.Model):
     correo = models.EmailField(blank=True)
     sitio_web = models.URLField(blank=True, default="https://eficaribesolar.com")
     logo = models.ImageField(upload_to="empresa/", blank=True)
-    color_primario = models.CharField(max_length=7, default="#1F4E79", help_text="Hex, por ejemplo #1F4E79")
+    color_primario = models.CharField(
+        max_length=7, default="#225816", validators=[COLOR_HEX],
+        help_text="Color principal de la marca (botones, títulos, tablas del PDF). Hex, por ejemplo #225816",
+    )
+    color_secundario = models.CharField(
+        max_length=7, default="#FFC302", validators=[COLOR_HEX],
+        help_text="Color de acento (detalles y resaltados). Hex, por ejemplo #FFC302",
+    )
 
     class Meta:
         verbose_name = "empresa"

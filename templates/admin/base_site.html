@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<link rel="icon" type="image/png" href="{% static 'cotizador/favicon.png' %}">
+<style>
+  /* Colores de la marca EfiCaribe Solar en el panel */
+  :root, html[data-theme="light"] {
+    --primary: #225816; --secondary: #1b4611; --accent: #FFC302; --primary-fg: #fff;
+    --header-color: #FFC302; --header-branding-color: #fff; --header-bg: #225816; --header-link-color: #fff;
+    --breadcrumbs-bg: #1b4611; --breadcrumbs-link-fg: #FFE08A;
+    --link-fg: #225816; --link-hover-color: #163a0e; --link-selected-fg: #163a0e;
+    --button-bg: #225816; --button-hover-bg: #163a0e;
+    --default-button-bg: #1b4611; --default-button-hover-bg: #163a0e;
+    --selected-row: #FFF6D6;
+  }
+  #header { border-bottom: 4px solid #FFC302; }
+  #site-name img { height: 36px; vertical-align: middle; margin-right: 10px; background: #fff; border-radius: 6px; padding: 2px; }
+</style>
+{% endblock %}
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}"><img src="{% static 'cotizador/logo.png' %}" alt="">{{ site_header|default:_('Django administration') }}</a></div>
+{% if user.is_anonymous %}{% include "admin/color_theme_toggle.html" %}{% endif %}
+{% endblock %}
+{% block nav-global %}{% endblock %}
