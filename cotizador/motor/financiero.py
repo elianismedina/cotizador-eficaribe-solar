@@ -23,6 +23,8 @@ class Supuestos:
     horizonte_anios: int = 25
     # {año: valor} de reposiciones a precios actuales
     reposiciones: dict[int, float] = field(default_factory=dict)
+    # Si se indica, el ahorro anual no supera este consumo (no se promete más que la factura).
+    consumo_anual_kwh: float | None = None
 
 
 @dataclass(frozen=True)
@@ -57,7 +59,10 @@ def flujo_de_caja(inversion: float, energia_anio1_kwh: float, s: Supuestos) -> l
     for anio in range(1, s.horizonte_anios + 1):
         energia = energia_anio1_kwh * (1 - s.degradacion) ** (anio - 1)
         tarifa = s.tarifa_kwh * (1 + s.incremento_tarifa) ** (anio - 1)
-        ahorro = energia * s.autoconsumo * tarifa
+        energia_ahorrada = energia * s.autoconsumo
+        if s.consumo_anual_kwh is not None:
+            energia_ahorrada = min(energia_ahorrada, s.consumo_anual_kwh)
+        ahorro = energia_ahorrada * tarifa
         costos = om_base * (1 + s.om_incremento) ** (anio - 1) + s.reposiciones.get(anio, 0.0)
         neto = ahorro - costos
         acumulado += neto

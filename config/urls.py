@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path
+from django.urls import include, path
 
 
 def salud(request):
@@ -14,4 +14,5 @@ admin.site.index_title = "Panel interno"
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", salud, name="salud"),
+    path("", include("cotizador.urls")),
 ]

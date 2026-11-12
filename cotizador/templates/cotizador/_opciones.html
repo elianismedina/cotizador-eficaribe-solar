@@ -1,0 +1,11 @@
+<fieldset class="space-y-2">
+  <legend class="text-sm font-medium">{{ campo.label }}</legend>
+  <div class="grid gap-2 sm:grid-cols-2">
+    {% for opcion in campo %}
+      <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-3 has-[:checked]:border-marca has-[:checked]:ring-2 has-[:checked]:ring-marca/30">
+        {{ opcion.tag }} <span>{{ opcion.choice_label }}</span>
+      </label>
+    {% endfor %}
+  </div>
+  {% for e in campo.errors %}<p class="text-sm text-red-600">{{ e }}</p>{% endfor %}
+</fieldset>

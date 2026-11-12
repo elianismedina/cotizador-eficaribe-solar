@@ -1,0 +1,18 @@
+{% extends "cotizador/base.html" %}
+{% block contenido %}
+<h1 class="text-2xl font-bold text-marca sm:text-3xl">¿Cuánto puedes ahorrar con energía solar?</h1>
+<p class="mt-2 text-slate-600">Responde cuatro preguntas y te mostramos el sistema que necesitas, cuánto ahorrarías y un precio estimado. Ten a mano tu factura de energía.</p>
+
+<form method="post" class="mt-6 space-y-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6" novalidate>
+  {% csrf_token %}
+  {% for e in form.non_field_errors %}<p class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ e }}</p>{% endfor %}
+  {% include "cotizador/_opciones.html" with campo=form.segmento %}
+  {% include "cotizador/_campo.html" with campo=form.zona %}
+  <div class="grid gap-4 sm:grid-cols-2">
+    {% include "cotizador/_campo.html" with campo=form.consumo_kwh %}
+    {% include "cotizador/_campo.html" with campo=form.valor_factura %}
+  </div>
+  {% include "cotizador/_opciones.html" with campo=form.tipo_sistema %}
+  <button type="submit" class="w-full rounded-lg bg-marca px-4 py-3 font-semibold text-white hover:opacity-90">Calcular mi sistema</button>
+</form>
+{% endblock %}
