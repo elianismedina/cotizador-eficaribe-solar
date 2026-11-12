@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Inicio</a> › <a href="{% url 'admin:catalogo_producto_changelist' %}">Productos</a> › Importar</div>{% endblock %}
+{% block content %}
+<p>En Tiendanube ve a <b>Productos › Exportar</b>, descarga el CSV y súbelo aquí. Los productos se identifican por su
+identificador de URL: volver a importar actualiza nombre, precio, marca y visibilidad, y conserva la categoría, el IVA
+y la potencia que hayas ajustado en el panel.</p>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" value="Importar" class="default">
+</form>
+{% endblock %}
