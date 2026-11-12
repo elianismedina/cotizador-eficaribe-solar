@@ -1,10 +1,11 @@
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 
-from catalogo.models import Producto
+from catalogo.models import Producto, tasa_iva_por_categoria
 
 UN_PESO = Decimal("1")
 
@@ -90,7 +91,11 @@ class Cotizacion(models.Model):
     numero = models.CharField(max_length=20, unique=True, editable=False)
     prospecto = models.ForeignKey(Prospecto, on_delete=models.CASCADE, related_name="cotizaciones")
     fecha = models.DateField(default=timezone.localdate)
-    validez_dias = models.PositiveSmallIntegerField(default=15)
+    validez_dias = models.PositiveSmallIntegerField(default=8)
+    trm = models.DecimalField(
+        "TRM (COP por USD)", max_digits=8, decimal_places=2, null=True, blank=True,
+        help_text="Para los ítems con costo en dólares. Al cambiarla se recalculan sus precios",
+    )
     estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.BORRADOR)
     tipo_sistema = models.CharField(max_length=20, choices=TipoSistema.choices, default=TipoSistema.ON_GRID)
     alcance = models.CharField(max_length=20, choices=Alcance.choices, default=Alcance.SUMINISTRO)
@@ -171,13 +176,35 @@ class Cotizacion(models.Model):
 
     @property
     def potencia_kwp(self) -> Decimal:
-        paneles = self.items.filter(producto__categoria=Producto.Categoria.PANEL)
-        return sum((i.cantidad * (i.producto.potencia_w or 0) for i in paneles), Decimal("0")) / 1000
+        paneles = self.items.filter(categoria=Producto.Categoria.PANEL)
+        return sum((i.cantidad * (i.potencia_w or 0) for i in paneles), Decimal("0")) / 1000
 
     @property
     def capacidad_baterias_kwh(self) -> Decimal:
-        baterias = self.items.filter(producto__categoria=Producto.Categoria.BATERIA)
-        return sum((i.cantidad * (i.producto.capacidad_kwh or 0) for i in baterias), Decimal("0"))
+        baterias = self.items.filter(categoria=Producto.Categoria.BATERIA)
+        return sum((i.cantidad * (i.capacidad_kwh or 0) for i in baterias), Decimal("0"))
+
+    @property
+    def margen_por_defecto(self) -> Decimal:
+        from configuracion.models import ParametrosFinancieros
+
+        p = ParametrosFinancieros.vigentes()
+        es_comercial = self.prospecto.cliente.tipo == Cliente.Tipo.COMERCIAL
+        return p.margen_comercial if es_comercial else p.margen_residencial
+
+    def utilidad(self) -> tuple[Decimal, Decimal] | None:
+        """Costo y utilidad (antes de IVA) de los ítems con costo conocido; None si no hay ninguno."""
+        con_costo = [i for i in self.items.all() if i.costo_cop is not None]
+        if not con_costo:
+            return None
+        costo = sum((redondear(i.cantidad * i.costo_cop) for i in con_costo), Decimal("0"))
+        venta = sum((i.subtotal for i in con_costo), Decimal("0"))
+        return costo, venta - costo
+
+    def recalcular_precios(self):
+        """Vuelve a calcular el precio de los ítems con costo (por ejemplo, tras cambiar la TRM)."""
+        for item in self.items.exclude(costo_unitario=None):
+            item.save()
 
 
 class ItemCotizacion(models.Model):
@@ -199,15 +226,35 @@ class ItemCotizacion(models.Model):
         Producto.Categoria.SERVICIO: Grupo.SERVICIOS,
     }
 
+    class Moneda(models.TextChoices):
+        COP = "COP", "COP"
+        USD = "USD", "USD"
+
     cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="items")
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
-    grupo = models.CharField(max_length=20, choices=Grupo.choices, blank=True)
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, null=True, blank=True,
+                                 help_text="Opcional: vacío para un equipo de proveedor que no está en el catálogo")
     descripcion = models.CharField(max_length=200, blank=True, help_text="Vacío = nombre del producto")
+    categoria = models.CharField(max_length=20, choices=Producto.Categoria.choices, blank=True,
+                                 help_text="Vacío = la del producto")
+    grupo = models.CharField(max_length=20, choices=Grupo.choices, blank=True)
+    potencia_w = models.DecimalField("Potencia (W)", max_digits=9, decimal_places=1, null=True, blank=True,
+                                     help_text="Paneles: para calcular los kWp")
+    capacidad_kwh = models.DecimalField("Capacidad (kWh)", max_digits=7, decimal_places=2, null=True, blank=True,
+                                        help_text="Baterías")
+    unidad = models.CharField(max_length=10, choices=Producto.Unidad.choices, blank=True)
+    unidad_detalle = models.CharField(max_length=40, blank=True)
+    garantia_anios = models.PositiveSmallIntegerField("Garantía (años)", null=True, blank=True)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
+    proveedor = models.CharField(max_length=120, blank=True)
+    costo_unitario = models.DecimalField("Costo unitario", max_digits=14, decimal_places=2, null=True, blank=True,
+                                         help_text="Lo que te cobra el proveedor, antes de IVA")
+    moneda = models.CharField(max_length=3, choices=Moneda.choices, default=Moneda.COP)
+    margen = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True,
+                                 help_text="Sobre el costo, ej. 0,25. Vacío = margen por defecto del segmento")
     precio_unitario = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True,
-                                          help_text="Vacío = precio actual del catálogo")
+                                          help_text="Con costo se calcula solo (costo × (1 + margen)); sin costo, vacío = precio del catálogo")
     tasa_iva = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True,
-                                   help_text="Vacío = según el producto (0 o 0,19)")
+                                   help_text="Vacío = según la categoría (paneles e inversores 0, lo demás 0,19)")
     orden = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
@@ -216,18 +263,55 @@ class ItemCotizacion(models.Model):
         verbose_name_plural = "ítems"
 
     def __str__(self):
-        return self.descripcion or self.producto.nombre
+        return self.descripcion or (self.producto.nombre if self.producto else "Ítem")
+
+    @property
+    def costo_cop(self) -> Decimal | None:
+        if self.costo_unitario is None:
+            return None
+        if self.moneda == self.Moneda.USD:
+            return self.costo_unitario * self.cotizacion.trm if self.cotizacion.trm else None
+        return self.costo_unitario
+
+    def clean(self):
+        errores = {}
+        if not self.producto_id:
+            if not self.descripcion:
+                errores["descripcion"] = "Escribe la descripción del equipo o elige un producto del catálogo."
+            if not self.categoria:
+                errores["categoria"] = "Elige la categoría (define el grupo y el IVA)."
+            if self.costo_unitario is None and self.precio_unitario is None:
+                errores["costo_unitario"] = "Indica el costo del proveedor o el precio de venta."
+        cot = getattr(self, "cotizacion", None)
+        if self.costo_unitario is not None and self.moneda == self.Moneda.USD and not (cot and cot.trm):
+            errores["moneda"] = "Para costos en dólares, indica la TRM en la cotización."
+        if errores:
+            raise ValidationError(errores)
 
     def save(self, *args, **kwargs):
-        # Congelar precio, IVA y grupo al guardar, para que cambios de catálogo no alteren la propuesta.
+        # Congelar los datos del producto al guardar, para que cambios de catálogo no alteren la propuesta.
+        prod = self.producto
+        if prod:
+            self.descripcion = self.descripcion or prod.nombre
+            self.categoria = self.categoria or prod.categoria
+            self.unidad = self.unidad or prod.unidad
+            self.unidad_detalle = self.unidad_detalle or prod.unidad_detalle
+            for campo in ("potencia_w", "capacidad_kwh", "garantia_anios"):
+                if getattr(self, campo) is None:
+                    setattr(self, campo, getattr(prod, campo))
+        self.categoria = self.categoria or Producto.Categoria.OTRO
+        self.unidad = self.unidad or Producto.Unidad.UNIDAD
+        if self.costo_cop is not None:
+            if self.margen is None:
+                self.margen = self.cotizacion.margen_por_defecto
+            # Con costo, el precio siempre sale de costo × (1 + margen); para ajustarlo se cambia el margen.
+            self.precio_unitario = redondear(self.costo_cop * (1 + self.margen))
         if self.precio_unitario is None:
-            self.precio_unitario = self.producto.precio
+            self.precio_unitario = prod.precio if prod else Decimal("0")
         if self.tasa_iva is None:
-            self.tasa_iva = self.producto.tasa_iva
+            self.tasa_iva = prod.tasa_iva if prod else tasa_iva_por_categoria(self.categoria)
         if not self.grupo:
-            self.grupo = self.GRUPO_POR_CATEGORIA.get(self.producto.categoria, self.Grupo.EQUIPOS)
-        if not self.descripcion:
-            self.descripcion = self.producto.nombre
+            self.grupo = self.GRUPO_POR_CATEGORIA.get(self.categoria, self.Grupo.EQUIPOS)
         super().save(*args, **kwargs)
 
     @property

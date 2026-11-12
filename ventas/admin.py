@@ -29,7 +29,8 @@ class ItemInline(admin.TabularInline):
     model = ItemCotizacion
     extra = 1
     autocomplete_fields = ("producto",)
-    fields = ("orden", "producto", "descripcion", "grupo", "cantidad", "precio_unitario", "tasa_iva")
+    fields = ("orden", "producto", "descripcion", "categoria", "potencia_w", "capacidad_kwh", "cantidad",
+              "proveedor", "costo_unitario", "moneda", "margen", "precio_unitario", "tasa_iva", "garantia_anios")
 
 
 @admin.register(Cotizacion)
@@ -40,13 +41,18 @@ class CotizacionAdmin(admin.ModelAdmin):
     readonly_fields = ("numero", "resumen_totales", "pdf")
     inlines = [ItemInline]
     fieldsets = (
-        (None, {"fields": ("numero", "pdf", "prospecto", "fecha", "validez_dias", "estado")}),
+        (None, {"fields": ("numero", "pdf", "prospecto", "fecha", "validez_dias", "estado", "trm")}),
         ("Proyecto", {"fields": ("tipo_sistema", "alcance", "ubicacion", "objeto", "exclusiones")}),
         ("Datos técnicos", {"fields": ("consumo_mensual_kwh", "hsp", "configuracion_strings", "cargas_respaldadas", "red_electrica")}),
         ("Condiciones comerciales", {"fields": ("flete", "descripcion_flete", "lugar_entrega", "forma_pago", "tiempo_entrega", "garantias")}),
         ("Análisis financiero", {"fields": ("tarifa_kwh", "supuestos", "resultados")}),
         ("Totales", {"fields": ("resumen_totales",)}),
     )
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        if change and "trm" in form.changed_data:
+            form.instance.recalcular_precios()
 
     @admin.display(description="Cliente")
     def cliente(self, obj):
@@ -64,7 +70,16 @@ class CotizacionAdmin(admin.ModelAdmin):
             f"Subtotal {pesos(obj.subtotal)} · IVA {pesos(obj.total_iva)} · "
             f"Equipos {pesos(obj.total_equipos)} · Flete {pesos(obj.flete)} · Total {pesos(obj.valor_total)} · "
             f"{obj.potencia_kwp:.2f} kWp · {obj.capacidad_baterias_kwh:.2f} kWh"
+            + self._texto_utilidad(obj)
         )
+
+    @staticmethod
+    def _texto_utilidad(obj) -> str:
+        datos = obj.utilidad()
+        if not datos:
+            return ""
+        costo, utilidad = datos
+        return f" · Costo proveedores {pesos(costo)} · Utilidad {pesos(utilidad)} (solo ítems con costo; no sale en el PDF)"
 
     @admin.display(description="Propuesta")
     def pdf(self, obj):

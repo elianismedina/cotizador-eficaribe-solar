@@ -3,6 +3,14 @@ from decimal import Decimal
 from django.db import models
 
 
+CATEGORIAS_SIN_IVA = {"panel", "inversor"}
+
+
+def tasa_iva_por_categoria(categoria: str) -> Decimal:
+    """En Colombia los paneles y los inversores están excluidos de IVA; lo demás paga 19 %."""
+    return Decimal("0") if categoria in CATEGORIAS_SIN_IVA else Decimal("0.19")
+
+
 class Producto(models.Model):
     """Equipo, material o servicio que se puede incluir en una cotización."""
 
