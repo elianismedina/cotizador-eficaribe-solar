@@ -47,6 +47,14 @@ Si cambias clases en las plantillas, vuelve a compilar:
 npx tailwindcss@3.4.17 -c tailwind/tailwind.config.js -i tailwind/entrada.css -o cotizador/static/cotizador/app.css --minify
 ```
 
+## Catálogo desde Tiendanube
+
+En Tiendanube: **Productos › Exportar** y descargar el CSV. Luego, en el panel, **Productos › Importar desde Tiendanube**
+(o `python manage.py importar_tiendanube archivo.csv`). Cada producto se identifica por su identificador de URL:
+volver a importar actualiza nombre, precio, marca y visibilidad, y conserva la categoría, el IVA y la potencia ajustados
+en el panel. Por defecto se asume que los precios de la tienda incluyen IVA y se guarda el precio sin IVA de los
+productos gravados (paneles e inversores quedan excluidos).
+
 ## Propuesta en PDF
 
 Desde el panel, en cada cotización, los enlaces **Ver PDF** y **Descargar** generan la propuesta formal con la estructura

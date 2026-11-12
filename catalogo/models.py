@@ -44,6 +44,10 @@ class Producto(models.Model):
     garantia_anios = models.PositiveSmallIntegerField(null=True, blank=True)
     ficha_tecnica = models.FileField(upload_to="fichas/", blank=True)
     id_tiendanube = models.CharField(max_length=40, blank=True, help_text="ID del producto en Tiendanube")
+    slug_tiendanube = models.SlugField(
+        "Identificador de URL en Tiendanube", max_length=200, blank=True, db_index=True,
+        help_text="Se usa para actualizar el producto al volver a importar el CSV",
+    )
     url_tienda = models.URLField(blank=True)
     activo = models.BooleanField(default=True)
     actualizado = models.DateTimeField(auto_now=True)
