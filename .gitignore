@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.env
+.venv/
+venv/
+db.sqlite3
+staticfiles/
+media/
+.DS_Store
+.idea/
+.vscode/
