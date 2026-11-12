@@ -13,6 +13,7 @@ admin.site.index_title = "Panel interno"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("panel/", include("ventas.urls")),
     path("health/", salud, name="salud"),
     path("", include("cotizador.urls")),
 ]

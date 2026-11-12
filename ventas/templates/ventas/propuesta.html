@@ -1,0 +1,155 @@
+{% load cop %}<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<style>
+  @page { size: letter; margin: 1.6cm 1.6cm 1.8cm 1.6cm;
+          @frame pie { -pdf-frame-content: pie; bottom: 0.7cm; margin-left: 1.6cm; margin-right: 1.6cm; height: 0.8cm; } }
+  body { font-family: Helvetica; font-size: 9pt; color: #222; }
+  .empresa { font-size: 14pt; font-weight: bold; color: #1F4E79; }
+  .datos-empresa { font-size: 8pt; color: #555; }
+  .linea { border-bottom: 2px solid #1F4E79; margin: 6px 0 10px 0; }
+  h1 { text-align: center; color: #1F4E79; font-size: 17pt; margin: 4px 0 0 0; }
+  .subtitulo { text-align: center; font-size: 10pt; margin-bottom: 8px; }
+  h2 { color: #1F4E79; font-size: 12pt; margin: 12px 0 4px 0; }
+  h3 { color: #2E75B6; font-size: 10pt; margin: 8px 0 3px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { border: 0.5px solid #bbb; padding: 3px 4px; vertical-align: top; }
+  th { background-color: #1F4E79; color: white; font-weight: bold; text-align: center; }
+  .etiqueta { background-color: #f2f2f2; font-weight: bold; width: 30%; }
+  .grupo td { background-color: #DCE6F1; font-weight: bold; }
+  .num { text-align: right; }
+  .centro { text-align: center; }
+  .total td { background-color: #DCE6F1; font-weight: bold; }
+  .gran-total td { background-color: #F4B183; font-weight: bold; }
+  .nota { font-size: 8pt; font-style: italic; color: #444; }
+  .destacado { background-color: #E2EFDA; font-weight: bold; }
+  .pie { text-align: center; font-size: 8pt; color: #777; }
+</style></head>
+<body>
+<div id="pie" class="pie">Cotización {{ cot.numero }} · Página <pdf:pagenumber> de <pdf:pagecount></div>
+
+<div class="empresa">{{ empresa.razon_social|upper }}</div>
+<div class="datos-empresa">{% if empresa.nit %}NIT {{ empresa.nit }}{% endif %}{% if empresa.direccion %} · {{ empresa.direccion }}{% endif %}<br>
+{% if empresa.telefono %}Tel. {{ empresa.telefono }}{% endif %}{% if empresa.correo %} · {{ empresa.correo }}{% endif %}</div>
+<div class="linea"></div>
+
+<h1>COTIZACIÓN FORMAL</h1>
+<div class="subtitulo">{% if cot.alcance == "suministro" %}Suministro de equipos para sistema solar fotovoltaico{% else %}Sistema solar fotovoltaico{% endif %}{% if cot.tipo_sistema == "hibrido" %} híbrido con almacenamiento{% elif cot.tipo_sistema == "aislado" %} aislado{% else %} conectado a la red{% endif %}</div>
+
+<table>
+  <tr><td class="etiqueta" width="20%">Cotización N.º</td><td width="28%">{{ cot.numero }}</td><td class="etiqueta" width="22%">Fecha</td><td width="30%">{{ fecha }}</td></tr>
+  <tr><td class="etiqueta">Cliente</td><td>{{ cliente.nombre }}</td><td class="etiqueta">Validez de la oferta</td><td>{{ cot.validez_dias }} días calendario</td></tr>
+  <tr><td class="etiqueta">Ubicación</td><td>{{ cot.ubicacion|default:cliente.ciudad }}</td><td class="etiqueta">Moneda</td><td>Pesos colombianos (COP)</td></tr>
+</table>
+
+<h2>1. Objeto</h2>
+<p>{% if cot.objeto %}{{ cot.objeto|linebreaksbr }}{% else %}{% if cot.alcance == "suministro" %}Suministro de los equipos para{% else %}Diseño, suministro e instalación de{% endif %} un sistema solar fotovoltaico{% if cot.tipo_sistema == "hibrido" %} híbrido{% endif %} de {{ kwp|floatformat:2 }} kWp{% if kwh_baterias %} con {{ kwh_baterias|floatformat:0 }} kWh de almacenamiento en baterías{% endif %}, que reduce el consumo de energía de la red{% if kwh_baterias %} y mantiene las cargas principales durante los cortes del servicio{% endif %}.{% endif %}</p>
+{% if cot.exclusiones %}<p class="nota">{{ cot.exclusiones|linebreaksbr }}</p>{% endif %}
+
+<h2>2. Descripción del sistema</h2>
+<table>
+  {% if paneles %}<tr><td class="etiqueta">Generación fotovoltaica</td><td>{% for i in paneles %}{{ i.cantidad|floatformat:0 }} × {{ i.descripcion }}{% if i.producto.descripcion_tecnica %}, {{ i.producto.descripcion_tecnica }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %} ({{ kwp|floatformat:2 }} kWp)</td></tr>{% endif %}
+  {% if inversores %}<tr><td class="etiqueta">Inversor</td><td>{% for i in inversores %}{{ i.cantidad|floatformat:0 }} × {{ i.descripcion }}{% if i.producto.descripcion_tecnica %}, {{ i.producto.descripcion_tecnica }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td></tr>{% endif %}
+  {% if baterias %}<tr><td class="etiqueta">Almacenamiento</td><td>{% for i in baterias %}{{ i.cantidad|floatformat:0 }} × {{ i.descripcion }}{% if i.producto.descripcion_tecnica %}, {{ i.producto.descripcion_tecnica }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %} ({{ kwh_baterias|floatformat:2 }} kWh en total)</td></tr>{% endif %}
+  {% if cot.configuracion_strings %}<tr><td class="etiqueta">Configuración de strings</td><td>{{ cot.configuracion_strings }}</td></tr>{% endif %}
+  {% if energia_anual %}<tr><td class="etiqueta">Producción estimada</td><td>~{{ energia_mensual|miles }} kWh/mes (~{{ energia_anual|miles }} kWh/año)</td></tr>{% endif %}
+  {% if cot.cargas_respaldadas %}<tr><td class="etiqueta">Cargas respaldadas</td><td>{{ cot.cargas_respaldadas }}</td></tr>{% endif %}
+  {% if cot.red_electrica %}<tr><td class="etiqueta">Red eléctrica</td><td>{{ cot.red_electrica }}</td></tr>{% endif %}
+</table>
+
+<h2>3. Propuesta económica</h2>
+<table>
+  <tr><th width="4%">#</th><th width="34%">Descripción</th><th width="7%">Cant.</th><th width="9%">Unidad</th><th width="12%">Valor unitario</th><th width="12%">Subtotal</th><th width="10%">IVA</th><th width="12%">Total</th></tr>
+  {% for g in grupos %}
+    <tr class="grupo"><td colspan="8">{{ g.nombre|upper }}</td></tr>
+    {% for i in g.items %}
+    <tr><td class="centro">{{ i.orden|add:1 }}</td><td>{{ i.descripcion }}</td><td class="centro">{{ i.cantidad|floatformat:"-2" }}</td>
+        <td class="centro">{{ i.producto.unidad }}{% if i.producto.unidad_detalle %} ({{ i.producto.unidad_detalle }}){% endif %}</td>
+        <td class="num">{{ i.precio_unitario|cop }}</td><td class="num">{{ i.subtotal|cop }}</td>
+        <td class="num">{% if i.tasa_iva %}{{ i.iva|cop }}{% else %}Excluido{% endif %}</td><td class="num">{{ i.total|cop }}</td></tr>
+    {% endfor %}
+  {% endfor %}
+  <tr><td colspan="7" class="num">Subtotal antes de IVA</td><td class="num">{{ cot.subtotal|cop }}</td></tr>
+  <tr><td colspan="7" class="num">IVA (19 %)</td><td class="num">{{ cot.total_iva|cop }}</td></tr>
+  <tr class="total"><td colspan="7" class="num">Total equipos{% if incluye_instalacion %} y servicios{% endif %}</td><td class="num">{{ cot.total_equipos|cop }}</td></tr>
+  {% if cot.flete %}<tr><td colspan="7" class="num">{{ cot.descripcion_flete|default:"Flete" }}</td><td class="num">{{ cot.flete|cop }}</td></tr>{% endif %}
+  <tr class="gran-total"><td colspan="7" class="num">VALOR TOTAL DE LA PROPUESTA</td><td class="num">{{ cot.valor_total|cop }}</td></tr>
+</table>
+<p><b>Valor total de la propuesta: {{ cot.valor_total|cop }} COP</b>{% if cot.flete %}, que corresponde a {{ cot.total_equipos|cop }} en equipos (IVA incluido) más {{ cot.flete|cop }} ({{ cot.descripcion_flete|default:"flete" }}){% endif %}.</p>
+{% if hay_excluidos %}<p class="nota">Los paneles solares y el inversor están excluidos de IVA. Si el proyecto obtiene la certificación de la UPME bajo la Ley 1715 de 2014, los demás equipos también podrían quedar excluidos de IVA.</p>{% endif %}
+
+<h2>4. Condiciones comerciales</h2>
+<ul>
+  <li><b>Forma de pago:</b> {{ condiciones.forma_pago }}</li>
+  {% if condiciones.financiacion %}<li><b>Financiación:</b> {{ condiciones.financiacion }}</li>{% endif %}
+  <li><b>Tiempo de entrega:</b> {{ condiciones.tiempo_entrega }}</li>
+  {% if cot.lugar_entrega %}<li><b>Lugar de entrega:</b> {{ cot.lugar_entrega }}</li>{% endif %}
+  <li><b>Garantías:</b> {{ condiciones.garantias }}</li>
+  <li><b>Validez:</b> {{ cot.validez_dias }} días calendario (hasta el {{ vence }}).</li>
+</ul>
+
+{% if escenarios %}
+<h2>5. Análisis de retorno de la inversión</h2>
+<p>Este análisis estima cuánto ahorra el cliente en su factura de energía y en cuánto tiempo recupera la inversión.{% if escenarios|length > 1 %} Se presenta un escenario con el valor de la propuesta y otro que agrega un costo estimado de instalación equivalente al {{ supuestos.pct_instalacion|porcentaje }} de los equipos.{% endif %}</p>
+
+<h3>5.1 Supuestos</h3>
+<table>
+  <tr><td class="etiqueta">Tarifa de energía (año 1)</td><td>{{ supuestos.tarifa|cop }}/kWh</td></tr>
+  <tr><td class="etiqueta">Horas solares pico</td><td>{{ supuestos.hsp|floatformat:"-2" }} HSP</td></tr>
+  <tr><td class="etiqueta">Rendimiento del sistema</td><td>{{ supuestos.rendimiento|porcentaje }} (pérdidas por temperatura, cableado, inversor y suciedad)</td></tr>
+  <tr><td class="etiqueta">Autoconsumo</td><td>{{ supuestos.autoconsumo|porcentaje }} de la energía generada se consume en el sitio; el resto no se valora</td></tr>
+  <tr><td class="etiqueta">Incremento anual de la tarifa</td><td>{{ supuestos.incremento_tarifa|porcentaje }}</td></tr>
+  <tr><td class="etiqueta">Degradación de los paneles</td><td>{{ supuestos.degradacion_texto }} anual</td></tr>
+  <tr><td class="etiqueta">Operación y mantenimiento</td><td>{{ supuestos.om|porcentaje }} anual de la inversión, con incremento del {{ supuestos.om_incremento|porcentaje }} anual</td></tr>
+  {% if supuestos.anio_inversor or supuestos.anio_baterias %}<tr><td class="etiqueta">Reposiciones</td><td>{% if supuestos.anio_inversor %}Inversor en el año {{ supuestos.anio_inversor }}{% endif %}{% if supuestos.anio_inversor and supuestos.anio_baterias %} y {% endif %}{% if supuestos.anio_baterias %}baterías en el año {{ supuestos.anio_baterias }}{% endif %}, a precios actuales</td></tr>{% endif %}
+</table>
+
+<h3>5.2 Resultados</h3>
+<table>
+  <tr><th>Indicador</th>{% for e in escenarios %}<th>{{ e.nombre }}</th>{% endfor %}</tr>
+  <tr><td>Inversión</td>{% for e in escenarios %}<td class="num">{{ e.resultado.inversion|cop }}</td>{% endfor %}</tr>
+  <tr><td>Ahorro en la factura de energía, año 1</td>{% for e in escenarios %}<td class="num">{{ e.resultado.ahorro_anio1|cop }}</td>{% endfor %}</tr>
+  <tr><td>Periodo de recuperación</td>{% for e in escenarios %}<td class="num">{{ e.resultado.recuperacion_texto }}</td>{% endfor %}</tr>
+  <tr><td>Tasa interna de retorno (TIR, {{ supuestos.horizonte }} años)</td>{% for e in escenarios %}<td class="num">{{ e.resultado.tir|porcentaje }}</td>{% endfor %}</tr>
+  <tr><td>Valor presente neto (tasa {{ supuestos.tasa_descuento|porcentaje }})</td>{% for e in escenarios %}<td class="num">{{ e.resultado.vpn|cop }}</td>{% endfor %}</tr>
+  <tr><td>Beneficio neto acumulado a {{ supuestos.horizonte }} años</td>{% for e in escenarios %}<td class="num">{{ e.resultado.beneficio_acumulado|cop }}</td>{% endfor %}</tr>
+</table>
+<p>Con estos supuestos, <b>la inversión se recupera en aproximadamente {{ escenarios.0.resultado.recuperacion_texto }}</b>{% if escenarios|length > 1 %}, y en {{ escenarios.1.resultado.recuperacion_texto }} si se incluye la instalación{% endif %}. Después de ese punto, el ahorro es beneficio neto durante el resto de la vida útil del sistema.</p>
+
+<h3>5.3 Flujo de caja proyectado</h3>
+<table>
+  <tr><th>Año</th><th>Energía (kWh)</th><th>Ahorro en factura</th><th>O&amp;M y reposiciones</th><th>Flujo neto</th><th>Flujo acumulado</th></tr>
+  {% for f in flujo %}
+  <tr><td class="centro">{{ f.anio }}</td>
+      {% if f.anio == 0 %}<td class="centro">–</td><td class="centro">–</td><td class="centro">–</td>
+      {% else %}<td class="num">{{ f.energia_kwh|miles }}</td><td class="num">{{ f.ahorro|cop }}</td><td class="num">{{ f.om_y_reposiciones|cop }}</td>{% endif %}
+      <td class="num">{{ f.flujo_neto|cop }}</td>
+      <td class="num{% if f.anio == anio_recuperacion %} destacado{% endif %}">{{ f.flujo_acumulado|cop }}</td></tr>
+  {% endfor %}
+</table>
+{% if supuestos.reposiciones %}<p class="nota">En los años {{ supuestos.reposiciones|join:" y " }} el flujo incluye las reposiciones de equipos.</p>{% endif %}
+
+<h3>5.4 Sensibilidad</h3>
+<p>El periodo de recuperación depende sobre todo de la tarifa de energía:</p>
+<table>
+  <tr><th>Tarifa de energía</th>{% for e in escenarios %}<th>Recuperación ({{ e.corto }})</th>{% endfor %}</tr>
+  {% for s in sensibilidad %}<tr><td>{% if s.base %}<b>{{ s.etiqueta }}</b>{% else %}{{ s.etiqueta }}{% endif %}</td>{% for v in s.valores %}<td class="centro">{{ v }}</td>{% endfor %}</tr>{% endfor %}
+</table>
+
+<h3>5.5 Beneficios tributarios (Ley 1715 de 2014 y Ley 2099 de 2021)</h3>
+<p>Si el cliente es contribuyente del impuesto de renta y el proyecto se certifica ante la UPME, puede acceder a:</p>
+<ul>
+  <li><b>Deducción en renta:</b> deducción del 50 % del valor de la inversión, distribuida hasta en 15 años. Con una tarifa de renta del {{ tarifa_renta|porcentaje }}, equivale a un ahorro en impuestos de hasta {{ deduccion_renta|cop }}.</li>
+  <li><b>Exclusión de IVA y exención de aranceles</b> de los equipos y servicios del proyecto.</li>
+  <li><b>Depreciación acelerada</b> de los activos, hasta el 33,33 % anual.</li>
+</ul>
+<p class="nota">Estos beneficios no se incluyeron en el cálculo de retorno, así que el resultado real podría ser más favorable. Su aplicación debe confirmarla el contador del cliente.</p>
+
+<h3>5.6 Beneficios adicionales</h3>
+<ul>
+  {% if kwh_baterias %}<li><b>Continuidad del servicio</b> durante los cortes de energía, con respaldo para las cargas críticas.</li>{% endif %}
+  <li><b>Protección</b> frente a los incrementos futuros de la tarifa de energía.</li>
+  <li><b>Menor huella de carbono:</b> evita cerca de {{ co2_ton_anio|floatformat:1 }} toneladas de CO<sub>2</sub> al año.</li>
+</ul>
+<p class="nota">Nota: {{ condiciones.nota }}</p>
+{% endif %}
+</body></html>

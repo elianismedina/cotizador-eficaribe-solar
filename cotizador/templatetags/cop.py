@@ -8,7 +8,8 @@ def cop(valor):
     """1234567 → $1.234.567"""
     if valor in (None, ""):
         return ""
-    return "$" + f"{round(float(valor)):,}".replace(",", ".")
+    n = round(float(valor))
+    return ("-" if n < 0 else "") + "$" + f"{abs(n):,}".replace(",", ".")
 
 
 @register.filter
