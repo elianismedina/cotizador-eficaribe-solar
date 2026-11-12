@@ -47,9 +47,9 @@ def estimar(sol: Solicitud) -> dict:
     precio = precio_min = precio_max = None
     recuperacion = tir = None
     if precio_ref:
-        precio = dim.potencia_real_kwp * 1000 * float(precio_ref.precio_por_wp)
-        margen = float(p.margen_rango_estimado)
-        precio_min, precio_max = precio * (1 - margen), precio * (1 + margen)
+        wp = dim.potencia_real_kwp * 1000
+        precio = wp * float(precio_ref.precio_por_wp)
+        precio_min, precio_max = wp * float(precio_ref.precio_min_wp), wp * float(precio_ref.precio_max_wp)
         fin = analizar(
             precio,
             dim.generacion_anual_kwh,

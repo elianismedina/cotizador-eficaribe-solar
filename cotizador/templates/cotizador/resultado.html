@@ -20,6 +20,7 @@
     <p class="text-xs uppercase tracking-wide text-slate-500">Precio estimado</p>
     {% if e.precio_min %}
       <p class="mt-1 text-lg font-bold leading-tight">{{ e.precio_min|cop }} a {{ e.precio_max|cop }}</p>
+      <p class="text-xs text-slate-500">Antes de IVA</p>
       <p class="text-sm text-slate-600">Recuperas la inversión en ~{{ e.recuperacion }}</p>
     {% else %}
       <p class="mt-1 text-base font-semibold">Te lo enviamos con tu asesor</p>
@@ -30,8 +31,8 @@
 <p class="mt-4 text-xs text-slate-500">
   Estimado con {{ e.hsp }} horas sol pico, {{ e.rendimiento|porcentaje }} de rendimiento y una tarifa de {{ e.tarifa_kwh|cop }}/kWh
   ({% if e.tarifa_origen == "factura" %}calculada con tu factura{% else %}valor de referencia{% endif %}).
-  Evita ~{{ e.co2_ton_anio }} toneladas de CO₂ al año. El precio final se confirma después de una visita técnica e incluye equipos,
-  instalación, certificación RETIE y trámites con el operador de red.
+  Evita ~{{ e.co2_ton_anio }} toneladas de CO₂ al año. El precio es antes de IVA (paneles e inversores están excluidos) y se confirma después de una visita técnica.
+  Incluye equipos, instalación, certificación RETIE y trámites con el operador de red.
 </p>
 
 <section class="mt-8 rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">

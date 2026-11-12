@@ -63,10 +63,6 @@ class ParametrosFinancieros(models.Model):
         "Tarifa de referencia comercial (COP/kWh)", max_digits=8, decimal_places=2, default=Decimal("1150"),
         help_text="Se usa si el cliente no indica el valor de su factura",
     )
-    margen_rango_estimado = models.DecimalField(
-        "Margen del rango de precio en línea", max_digits=4, decimal_places=3, default=Decimal("0.10"),
-        validators=PORCENTAJE, help_text="0,10 muestra el precio estimado ±10 %",
-    )
     factor_emision_kg_kwh = models.DecimalField(
         "Factor de emisión (kg CO₂/kWh)", max_digits=5, decimal_places=3, default=Decimal("0.126"),
         help_text="Validar con el factor de emisión vigente del SIN",
@@ -174,8 +170,9 @@ class PrecioReferencia(models.Model):
     kwp_desde = models.DecimalField("Desde (kWp)", max_digits=7, decimal_places=2, default=Decimal("0"))
     kwp_hasta = models.DecimalField("Hasta (kWp)", max_digits=7, decimal_places=2, null=True, blank=True,
                                     help_text="Vacío = sin límite")
-    precio_por_wp = models.DecimalField("Precio por Wp (COP, IVA incluido)", max_digits=9, decimal_places=2)
-    incluye = models.CharField(max_length=200, blank=True, default="Equipos, instalación, RETIE y trámites")
+    precio_min_wp = models.DecimalField("Precio mínimo por Wp (COP, antes de IVA)", max_digits=9, decimal_places=2)
+    precio_max_wp = models.DecimalField("Precio máximo por Wp (COP, antes de IVA)", max_digits=9, decimal_places=2)
+    incluye = models.CharField(max_length=200, blank=True, default="Llave en mano: equipos, instalación, RETIE y trámites")
     nota = models.CharField(max_length=200, blank=True)
 
     class Meta:
@@ -185,7 +182,12 @@ class PrecioReferencia(models.Model):
 
     def __str__(self):
         hasta = f"{self.kwp_hasta}" if self.kwp_hasta is not None else "∞"
-        return f"{self.get_tipo_sistema_display()} {self.kwp_desde}–{hasta} kWp · ${self.precio_por_wp}/Wp"
+        return f"{self.get_tipo_sistema_display()} {self.kwp_desde}–{hasta} kWp · ${self.precio_min_wp}–${self.precio_max_wp}/Wp"
+
+    @property
+    def precio_por_wp(self) -> Decimal:
+        """Punto medio del rango, usado para el análisis de retorno."""
+        return (self.precio_min_wp + self.precio_max_wp) / 2
 
     @classmethod
     def para(cls, tipo_sistema: str, kwp) -> "PrecioReferencia | None":

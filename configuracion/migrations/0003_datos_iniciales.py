@@ -2,7 +2,7 @@
 
 Todos los valores son puntos de partida y se ajustan desde el panel de administración:
 - HSP por zona: aproximados, salvo la costa pacífica del Cauca (3,5, tomado de COT-2026-1987).
-- Precios por Wp: derivados de COT-2026-1987 más un 20 % estimado de instalación.
+- Precios por Wp: rangos de referencia de mercado llave en mano (finales de 2026), antes de IVA.
 """
 from decimal import Decimal
 
@@ -30,11 +30,17 @@ ZONAS = [
     ("Bucaramanga", "Santander", "4.5", APROX),
 ]
 
-# COT-2026-1987: equipos $59.301.523 (baterías $14.202.293) para 23,94 kWp, + 20 % de instalación.
-NOTA_PRECIO = "Derivado de COT-2026-1987 + 20 % de instalación estimada; ajustar con precios reales"
+# Rangos de referencia de mercado (finales de 2026, llave en mano, COP por Wp antes de IVA)
+# entregados por Eli. El cotizador muestra el rango y usa el punto medio para el retorno.
+NOTA_PRECIO = "Rango de referencia de mercado, finales de 2026; ajustar con costos propios"
 PRECIOS = [
-    ("hibrido", Decimal("2970")),
-    ("on_grid", Decimal("2260")),
+    # (tipo, desde kWp, hasta kWp, mínimo, máximo)
+    ("on_grid", "0", "5", "4000", "5500"),
+    ("on_grid", "5", "10", "3500", "4500"),
+    ("on_grid", "10", "50", "3000", "3800"),
+    ("on_grid", "50", "200", "2600", "3200"),
+    ("on_grid", "200", None, "2200", "2800"),
+    ("hibrido", "0", None, "6000", "9000"),
 ]
 
 
@@ -50,7 +56,15 @@ def cargar(apps, schema_editor):
         )
     if not PrecioReferencia.objects.exists():
         PrecioReferencia.objects.bulk_create(
-            PrecioReferencia(tipo_sistema=t, precio_por_wp=p, nota=NOTA_PRECIO) for t, p in PRECIOS
+            PrecioReferencia(
+                tipo_sistema=t,
+                kwp_desde=Decimal(desde),
+                kwp_hasta=Decimal(hasta) if hasta else None,
+                precio_min_wp=Decimal(minimo),
+                precio_max_wp=Decimal(maximo),
+                nota=NOTA_PRECIO,
+            )
+            for t, desde, hasta, minimo, maximo in PRECIOS
         )
     Empresa.objects.get_or_create(
         pk=1,

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -19,9 +21,10 @@ class EstimadorTests(TestCase):
         self.assertEqual(e["tarifa_kwh"], 1150)
         self.assertEqual(e["tarifa_origen"], "factura")
         self.assertEqual(e["generacion_mensual_kwh"], 1988)
-        self.assertEqual(e["precio_estimado"], round(23_940 * 2970))
-        self.assertLess(e["precio_min"], e["precio_estimado"])
-        self.assertGreater(e["precio_max"], e["precio_estimado"])
+        # Híbrido: rango $6.000–$9.000 por Wp, punto medio $7.500
+        self.assertEqual(e["precio_min"], 23_940 * 6000)
+        self.assertEqual(e["precio_max"], 23_940 * 9000)
+        self.assertEqual(e["precio_estimado"], 23_940 * 7500)
         self.assertIsNotNone(e["recuperacion"])
 
     def test_ahorro_no_supera_la_factura(self):
@@ -31,6 +34,14 @@ class EstimadorTests(TestCase):
         e = estimar(Solicitud("residencial", "on_grid", barranquilla.pk, consumo_kwh=350, valor_factura=315_000))
         self.assertGreater(e["generacion_mensual_kwh"] * 0.9, 350)  # el sistema genera más de lo que se consume
         self.assertEqual(e["ahorro_mensual"], 315_000)
+
+    def test_rango_segun_tamano(self):
+        from configuracion.models import PrecioReferencia as P
+
+        self.assertEqual(P.para("on_grid", Decimal("3")).precio_min_wp, 4000)
+        self.assertEqual(P.para("on_grid", Decimal("5")).precio_min_wp, 3500)
+        self.assertEqual(P.para("on_grid", Decimal("120")).precio_min_wp, 2600)
+        self.assertEqual(P.para("on_grid", Decimal("500")).precio_min_wp, 2200)
 
     def test_sin_precio_de_referencia(self):
         from cotizador.estimador import Solicitud, estimar

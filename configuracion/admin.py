@@ -37,6 +37,6 @@ class PlantillaCondicionesAdmin(admin.ModelAdmin):
 
 @admin.register(PrecioReferencia)
 class PrecioReferenciaAdmin(admin.ModelAdmin):
-    list_display = ("tipo_sistema", "kwp_desde", "kwp_hasta", "precio_por_wp", "incluye")
+    list_display = ("tipo_sistema", "kwp_desde", "kwp_hasta", "precio_min_wp", "precio_max_wp", "incluye")
     list_filter = ("tipo_sistema",)
-    list_editable = ("precio_por_wp",)
+    list_editable = ("precio_min_wp", "precio_max_wp")
