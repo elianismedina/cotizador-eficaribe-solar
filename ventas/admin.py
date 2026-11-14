@@ -38,16 +38,20 @@ class CotizacionAdmin(admin.ModelAdmin):
     list_display = ("numero", "cliente", "tipo_sistema", "alcance", "estado", "fecha", "valor_total_cop", "pdf")
     list_filter = ("estado", "tipo_sistema", "alcance", "tipo_techo")
     search_fields = ("numero", "prospecto__cliente__nombre")
-    readonly_fields = ("numero", "resumen_totales", "pdf")
+    readonly_fields = ("numero", "resumen_totales", "pdf", "factura")
     inlines = [ItemInline]
     fieldsets = (
-        (None, {"fields": ("numero", "pdf", "prospecto", "fecha", "validez_dias", "estado", "trm")}),
+        (None, {"fields": ("numero", "pdf", "factura", "prospecto", "fecha", "validez_dias", "estado", "trm")}),
         ("Proyecto", {"fields": ("tipo_sistema", "alcance", "ubicacion", "tipo_techo", "objeto", "exclusiones")}),
         ("Datos técnicos", {"fields": ("consumo_mensual_kwh", "hsp", "configuracion_strings", "cargas_respaldadas", "red_electrica")}),
         ("Condiciones comerciales", {"fields": ("flete", "descripcion_flete", "lugar_entrega", "forma_pago", "tiempo_entrega", "garantias")}),
         ("Análisis financiero", {"fields": ("tarifa_kwh", "supuestos", "resultados")}),
         ("Totales", {"fields": ("resumen_totales",)}),
     )
+
+    def get_queryset(self, request):
+        # La factura puede pesar varios MB; no se carga en los listados.
+        return super().get_queryset(request).defer("factura_archivo")
 
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
@@ -80,6 +84,14 @@ class CotizacionAdmin(admin.ModelAdmin):
             return ""
         costo, utilidad = datos
         return f" · Costo proveedores {pesos(costo)} · Utilidad {pesos(utilidad)} (solo ítems con costo; no sale en el PDF)"
+
+    @admin.display(description="Factura del cliente")
+    def factura(self, obj):
+        if not obj.pk or not obj.factura_nombre:
+            return "No adjuntó factura"
+        url = reverse("ventas:factura", args=[obj.pk])
+        return format_html('<a href="{}" target="_blank">Ver factura</a> · <a href="{}?descargar=1">Descargar</a> ({})',
+                           url, url, obj.factura_nombre)
 
     @admin.display(description="Propuesta")
     def pdf(self, obj):
