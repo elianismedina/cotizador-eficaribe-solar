@@ -1,6 +1,7 @@
 from django import forms
 
 from configuracion.models import Irradiacion
+from ventas.models import Cotizacion
 
 CAMPO = "w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-marca focus:ring-marca"
 
@@ -23,6 +24,12 @@ class CotizadorForm(forms.Form):
         queryset=Irradiacion.objects.all(),
         empty_label="Elige la zona más cercana",
         widget=forms.Select(attrs={"class": CAMPO}),
+    )
+    tipo_techo = forms.ChoiceField(
+        label="¿Dónde se instalarían los paneles?",
+        choices=Cotizacion.TipoTecho.choices,
+        widget=forms.RadioSelect,
+        error_messages={"required": "Elige el tipo de techo; si no lo sabes, marca «No estoy seguro»."},
     )
     consumo_kwh = forms.FloatField(
         label="Consumo mensual (kWh)",

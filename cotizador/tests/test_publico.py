@@ -58,7 +58,8 @@ class FlujoPublicoTests(TestCase):
         self.zona = Irradiacion.objects.get(zona__startswith="Barranquilla")
 
     def calcular(self, **extra):
-        datos = {"segmento": "residencial", "tipo_sistema": "on_grid", "zona": self.zona.pk, "consumo_kwh": 350}
+        datos = {"segmento": "residencial", "tipo_sistema": "on_grid", "zona": self.zona.pk, "consumo_kwh": 350,
+                 "tipo_techo": "fibrocemento"}
         datos.update(extra)
         return self.client.post(reverse("cotizador:inicio") + "?utm_source=tiendanube", datos)
 
@@ -90,10 +91,16 @@ class FlujoPublicoTests(TestCase):
         self.assertEqual(cot.prospecto.cliente.nombre, "Ana Pérez")
         self.assertTrue(cot.prospecto.cliente.acepta_tratamiento_datos)
         self.assertIn("potencia_kwp", cot.resultados)
+        self.assertEqual(cot.tipo_techo, Cotizacion.TipoTecho.FIBROCEMENTO)
         self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Techo: Teja de fibrocemento", mail.outbox[0].body)
         self.assertIn(cot.numero, mail.outbox[0].subject)
         r = self.client.get(reverse("cotizador:gracias"))
         self.assertContains(r, cot.numero)
+
+    def test_tipo_techo_obligatorio(self):
+        r = self.calcular(tipo_techo="")
+        self.assertContains(r, "Elige el tipo de techo")
 
     def test_factura_incoherente(self):
         r = self.calcular(consumo_kwh=350, valor_factura=10_000_000)

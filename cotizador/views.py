@@ -28,7 +28,7 @@ def inicio(request):
     form = CotizadorForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
-        request.session["estimado"] = estimar(
+        estimado = estimar(
             Solicitud(
                 segmento=d["segmento"],
                 tipo_sistema=d["tipo_sistema"],
@@ -37,6 +37,9 @@ def inicio(request):
                 valor_factura=d.get("valor_factura"),
             )
         )
+        estimado["tipo_techo"] = d["tipo_techo"]
+        estimado["tipo_techo_texto"] = Cotizacion.TipoTecho(d["tipo_techo"]).label
+        request.session["estimado"] = estimado
         return redirect("cotizador:resultado")
     return render(request, "cotizador/inicio.html", {"form": form, "empresa": Empresa.actual()})
 
@@ -86,6 +89,7 @@ def crear_prospecto(datos: dict, estimado: dict, session) -> Cotizacion:
         tipo_sistema=sol["tipo_sistema"],
         alcance=Cotizacion.Alcance.LLAVE_EN_MANO,
         ubicacion=f"{datos['ciudad']} · {estimado['zona']}",
+        tipo_techo=estimado.get("tipo_techo", ""),
         consumo_mensual_kwh=Decimal(str(sol["consumo_kwh"])),
         hsp=Decimal(str(estimado["hsp"])),
         tarifa_kwh=Decimal(str(estimado["tarifa_kwh"])),
@@ -104,7 +108,8 @@ def notificar_equipo(request, cotizacion: Cotizacion, e: dict) -> None:
     cuerpo = (
         f"Nuevo prospecto desde el cotizador web\n\n"
         f"Cliente: {cliente.nombre}\nCelular: {cliente.telefono}\nCorreo: {cliente.correo}\n"
-        f"Ciudad: {cliente.ciudad} ({e['zona']})\nTipo: {cliente.get_tipo_display()} · {cotizacion.get_tipo_sistema_display()}\n\n"
+        f"Ciudad: {cliente.ciudad} ({e['zona']})\nTipo: {cliente.get_tipo_display()} · {cotizacion.get_tipo_sistema_display()}\n"
+        f"Techo: {cotizacion.get_tipo_techo_display() or 'sin dato'}\n\n"
         f"Consumo: {e['solicitud']['consumo_kwh']:.0f} kWh/mes\nSistema sugerido: {e['potencia_kwp']} kWp ({e['num_paneles']} paneles)\n"
         f"Precio mostrado: {precio}\n\nVer en el panel: {url}\n"
     )

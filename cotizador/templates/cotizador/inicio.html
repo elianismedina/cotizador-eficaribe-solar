@@ -10,7 +10,7 @@
   <div class="absolute inset-0 bg-gradient-to-t from-marca/95 via-marca/60 to-transparent"></div>
   <div class="absolute inset-x-0 bottom-0 p-5 sm:p-8">
     <h1 class="text-2xl font-bold text-white sm:text-3xl">¿Cuánto puedes ahorrar con energía solar?</h1>
-    <p class="mt-2 max-w-xl text-sm text-white/90 sm:text-base">Responde cuatro preguntas y te mostramos el sistema que necesitas, cuánto ahorrarías y un precio estimado. Ten a mano tu factura de energía.</p>
+    <p class="mt-2 max-w-xl text-sm text-white/90 sm:text-base">Responde cinco preguntas y te mostramos el sistema que necesitas, cuánto ahorrarías y un precio estimado. Ten a mano tu factura de energía.</p>
   </div>
 </section>
 
@@ -19,6 +19,7 @@
   {% for e in form.non_field_errors %}<p class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ e }}</p>{% endfor %}
   {% include "cotizador/_opciones.html" with campo=form.segmento %}
   {% include "cotizador/_campo.html" with campo=form.zona %}
+  {% include "cotizador/_opciones.html" with campo=form.tipo_techo %}
   <div class="grid gap-4 sm:grid-cols-2">
     {% include "cotizador/_campo.html" with campo=form.consumo_kwh %}
     {% include "cotizador/_campo.html" with campo=form.valor_factura %}

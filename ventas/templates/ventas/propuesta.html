@@ -51,6 +51,7 @@
 
 <h2>2. Descripción del sistema</h2>
 <table>
+  {% if cot.tipo_techo %}<tr><td class="etiqueta">Superficie de instalación</td><td>{{ cot.get_tipo_techo_display }}</td></tr>{% endif %}
   {% if paneles %}<tr><td class="etiqueta">Generación fotovoltaica</td><td>{% for i in paneles %}{{ i.cantidad|floatformat:0 }} × {{ i.descripcion }}{% if i.producto.descripcion_tecnica %}, {{ i.producto.descripcion_tecnica }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %} ({{ kwp|floatformat:2 }} kWp)</td></tr>{% endif %}
   {% if inversores %}<tr><td class="etiqueta">Inversor</td><td>{% for i in inversores %}{{ i.cantidad|floatformat:0 }} × {{ i.descripcion }}{% if i.producto.descripcion_tecnica %}, {{ i.producto.descripcion_tecnica }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td></tr>{% endif %}
   {% if baterias %}<tr><td class="etiqueta">Almacenamiento</td><td>{% for i in baterias %}{{ i.cantidad|floatformat:0 }} × {{ i.descripcion }}{% if i.producto.descripcion_tecnica %}, {{ i.producto.descripcion_tecnica }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %} ({{ kwh_baterias|floatformat:2 }} kWh en total)</td></tr>{% endif %}

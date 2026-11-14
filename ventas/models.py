@@ -81,6 +81,14 @@ class Cotizacion(models.Model):
         INSTALADO = "instalado", "Suministro e instalación"
         LLAVE_EN_MANO = "llave_en_mano", "Llave en mano (instalación, RETIE y trámites)"
 
+    class TipoTecho(models.TextChoices):
+        CONCRETO = "concreto", "Placa o losa de concreto"
+        FIBROCEMENTO = "fibrocemento", "Teja de fibrocemento (tipo Eternit)"
+        METALICA = "metalica", "Teja metálica, de zinc o termoacústica"
+        BARRO = "barro", "Teja de barro"
+        SUELO = "suelo", "En el suelo (no en techo)"
+        NO_SE = "no_se", "No estoy seguro"
+
     class Estado(models.TextChoices):
         BORRADOR = "borrador", "Borrador"
         ENVIADA = "enviada", "Enviada"
@@ -101,6 +109,8 @@ class Cotizacion(models.Model):
     alcance = models.CharField(max_length=20, choices=Alcance.choices, default=Alcance.SUMINISTRO)
     exclusiones = models.TextField(blank=True, help_text="Qué no incluye la oferta")
     ubicacion = models.CharField(max_length=120, blank=True)
+    tipo_techo = models.CharField("Tipo de techo", max_length=20, choices=TipoTecho.choices, blank=True,
+                                  help_text="Define la estructura de montaje")
     objeto = models.TextField(blank=True, help_text="Para qué sirve el sistema (sección 1 del PDF)")
 
     # Datos técnicos (sección 2)
