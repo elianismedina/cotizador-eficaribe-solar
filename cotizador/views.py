@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -49,7 +49,7 @@ def resultado(request):
     estimado = request.session.get("estimado")
     if not estimado:
         return redirect("cotizador:inicio")
-    form = ContactoForm(request.POST or None)
+    form = ContactoForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         cotizacion = crear_prospecto(form.cleaned_data, estimado, request.session)
         notificar_equipo(request, cotizacion, estimado)
@@ -69,6 +69,7 @@ def gracias(request):
 @transaction.atomic
 def crear_prospecto(datos: dict, estimado: dict, session) -> Cotizacion:
     sol = estimado["solicitud"]
+    factura = datos.get("factura")
     cliente = Cliente.objects.create(
         nombre=datos["nombre"],
         telefono=datos["telefono"],
@@ -90,6 +91,9 @@ def crear_prospecto(datos: dict, estimado: dict, session) -> Cotizacion:
         alcance=Cotizacion.Alcance.LLAVE_EN_MANO,
         ubicacion=f"{datos['ciudad']} · {estimado['zona']}",
         tipo_techo=estimado.get("tipo_techo", ""),
+        factura_archivo=factura["contenido"] if factura else None,
+        factura_nombre=factura["nombre"] if factura else "",
+        factura_tipo=factura["tipo"] if factura else "",
         consumo_mensual_kwh=Decimal(str(sol["consumo_kwh"])),
         hsp=Decimal(str(estimado["hsp"])),
         tarifa_kwh=Decimal(str(estimado["tarifa_kwh"])),
@@ -111,12 +115,16 @@ def notificar_equipo(request, cotizacion: Cotizacion, e: dict) -> None:
         f"Ciudad: {cliente.ciudad} ({e['zona']})\nTipo: {cliente.get_tipo_display()} · {cotizacion.get_tipo_sistema_display()}\n"
         f"Techo: {cotizacion.get_tipo_techo_display() or 'sin dato'}\n\n"
         f"Consumo: {e['solicitud']['consumo_kwh']:.0f} kWh/mes\nSistema sugerido: {e['potencia_kwp']} kWp ({e['num_paneles']} paneles)\n"
-        f"Precio mostrado: {precio}\n\nVer en el panel: {url}\n"
+        f"Precio mostrado: {precio}\n"
+        f"Factura: {'adjunta' if cotizacion.factura_archivo else 'no la adjuntó'}\n\nVer en el panel: {url}\n"
     )
-    send_mail(
+    mensaje = EmailMessage(
         f"Nuevo prospecto {cotizacion.numero}: {cliente.nombre}",
         cuerpo,
         settings.DEFAULT_FROM_EMAIL,
         destinatarios,
-        fail_silently=True,
+        reply_to=[cliente.correo] if cliente.correo else None,
     )
+    if cotizacion.factura_archivo:
+        mensaje.attach(cotizacion.factura_nombre, bytes(cotizacion.factura_archivo), cotizacion.factura_tipo)
+    mensaje.send(fail_silently=True)

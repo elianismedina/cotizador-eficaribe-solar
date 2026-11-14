@@ -98,6 +98,59 @@ class FlujoPublicoTests(TestCase):
         r = self.client.get(reverse("cotizador:gracias"))
         self.assertContains(r, cot.numero)
 
+    def contacto(self, **extra):
+        datos = {"nombre": "Ana Pérez", "telefono": "3001234567", "correo": "ana@example.com",
+                 "ciudad": "Barranquilla", "acepta": "on", "sitio_web": ""}
+        datos.update(extra)
+        return self.client.post(reverse("cotizador:resultado"), datos)
+
+    def test_factura_adjunta_se_guarda_y_llega_en_el_correo(self):
+        from django.contrib.auth.models import User
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.calcular()
+        pdf = SimpleUploadedFile("mi factura.pdf", b"%PDF-1.4 contenido de prueba", content_type="application/pdf")
+        r = self.contacto(factura=pdf)
+        self.assertRedirects(r, reverse("cotizador:gracias"))
+        cot = Cotizacion.objects.get()
+        self.assertEqual(bytes(cot.factura_archivo), b"%PDF-1.4 contenido de prueba")
+        self.assertEqual((cot.factura_nombre, cot.factura_tipo), ("mi factura.pdf", "application/pdf"))
+        correo = mail.outbox[0]
+        self.assertEqual(correo.attachments[0][0], "mi factura.pdf")
+        self.assertIn("Factura: adjunta", correo.body)
+        self.assertEqual(correo.reply_to, ["ana@example.com"])
+
+        url = reverse("ventas:factura", args=[cot.pk])
+        self.assertEqual(self.client.get(url).status_code, 302)  # solo el equipo
+        User.objects.create_user("eli", password="x", is_staff=True)
+        self.client.login(username="eli", password="x")
+        r = self.client.get(url)
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertEqual(r.content, b"%PDF-1.4 contenido de prueba")
+
+    def test_factura_es_opcional(self):
+        self.calcular()
+        self.assertRedirects(self.contacto(), reverse("cotizador:gracias"))
+        self.assertIsNone(Cotizacion.objects.get().factura_archivo)
+        self.assertIn("Factura: no la adjuntó", mail.outbox[0].body)
+
+    def test_factura_rechaza_otros_archivos(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.calcular()
+        falso = SimpleUploadedFile("factura.pdf", b"MZ esto es un ejecutable", content_type="application/pdf")
+        r = self.contacto(factura=falso)
+        self.assertContains(r, "Sube una foto")
+        self.assertFalse(Cotizacion.objects.exists())
+
+    def test_factura_muy_pesada(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.calcular()
+        grande = SimpleUploadedFile("f.jpg", b"\xff\xd8\xff" + b"0" * (5 * 1024 * 1024), content_type="image/jpeg")
+        r = self.contacto(factura=grande)
+        self.assertContains(r, "más de 5 MB")
+
     def test_tipo_techo_obligatorio(self):
         r = self.calcular(tipo_techo="")
         self.assertContains(r, "Elige el tipo de techo")

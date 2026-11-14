@@ -109,6 +109,9 @@ class Cotizacion(models.Model):
     alcance = models.CharField(max_length=20, choices=Alcance.choices, default=Alcance.SUMINISTRO)
     exclusiones = models.TextField(blank=True, help_text="Qué no incluye la oferta")
     ubicacion = models.CharField(max_length=120, blank=True)
+    factura_archivo = models.BinaryField("Factura de energía", null=True, blank=True, editable=False)
+    factura_nombre = models.CharField(max_length=200, blank=True, editable=False)
+    factura_tipo = models.CharField(max_length=60, blank=True, editable=False)
     tipo_techo = models.CharField("Tipo de techo", max_length=20, choices=TipoTecho.choices, blank=True,
                                   help_text="Define la estructura de montaje")
     objeto = models.TextField(blank=True, help_text="Para qué sirve el sistema (sección 1 del PDF)")
