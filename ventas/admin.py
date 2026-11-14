@@ -36,13 +36,13 @@ class ItemInline(admin.TabularInline):
 @admin.register(Cotizacion)
 class CotizacionAdmin(admin.ModelAdmin):
     list_display = ("numero", "cliente", "tipo_sistema", "alcance", "estado", "fecha", "valor_total_cop", "pdf")
-    list_filter = ("estado", "tipo_sistema", "alcance")
+    list_filter = ("estado", "tipo_sistema", "alcance", "tipo_techo")
     search_fields = ("numero", "prospecto__cliente__nombre")
     readonly_fields = ("numero", "resumen_totales", "pdf")
     inlines = [ItemInline]
     fieldsets = (
         (None, {"fields": ("numero", "pdf", "prospecto", "fecha", "validez_dias", "estado", "trm")}),
-        ("Proyecto", {"fields": ("tipo_sistema", "alcance", "ubicacion", "objeto", "exclusiones")}),
+        ("Proyecto", {"fields": ("tipo_sistema", "alcance", "ubicacion", "tipo_techo", "objeto", "exclusiones")}),
         ("Datos técnicos", {"fields": ("consumo_mensual_kwh", "hsp", "configuracion_strings", "cargas_respaldadas", "red_electrica")}),
         ("Condiciones comerciales", {"fields": ("flete", "descripcion_flete", "lugar_entrega", "forma_pago", "tiempo_entrega", "garantias")}),
         ("Análisis financiero", {"fields": ("tarifa_kwh", "supuestos", "resultados")}),
